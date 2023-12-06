@@ -1,0 +1,11 @@
+{
+    "train-tracker": {
+        "api-enabled": "True",
+        "//first-comment": "Station/Stop Information for Trains",
+        "//second-comment": "Enter the train station #'s to lookup",
+        "station-ids": "F03,D03,B02",
+        "circuit-ids": [2364,2231,2364,2231,1400,1568,477,677],
+        "api-url": "https://api.wmata.com/StationPrediction.svc/json/GetPrediction/{}",
+        "positions-url": "https://api.wmata.com/TrainPositions/TrainPositions?contentType=json"
+    }
+}
