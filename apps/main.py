@@ -53,7 +53,9 @@ def get_date(date_type):
     elif date_type == "api-yesterday":
         date = datetime.strftime(datetime.now()-timedelta(days=1), "%Y-%m-%d")
     elif date_type == "now":
-        date = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), "%Y-%m-%dT%H:%M:%S")
+    elif date_type == "short-now":
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), "%H:%M:%S")
     elif date_type == "current-month":
         date = datetime.strftime(datetime.now(), "%b%Y")
     return date
@@ -168,9 +170,8 @@ while True:  # Where the magic happens
     train_station_map_ids = settings["train-tracker"]["station-ids"]
     train_station_circuit_ids = settings["train-tracker"]["circuit-ids"]
 
-    current_time = datetime.strftime(datetime.now(), "%Y-%m-%dT%H:%M:%S")
-    current_time_console = "The Current Time is: " + \
-        datetime.strftime(datetime.now(), "%H:%M:%S")
+    current_time = get_date("now")
+    current_time_console = "The Current Time is: " + get_date("short-now")
     logging.info(current_time_console)
 
     # API Portion runs if enabled and station id's exist

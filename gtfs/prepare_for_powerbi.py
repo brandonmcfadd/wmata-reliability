@@ -9,7 +9,7 @@ import requests, zipfile, io
 directory_path = os.getcwd() + "/gtfs"
 stop_times_path = directory_path + "/powerbi/export/stop_times.txt"
 trips_path = directory_path + "/powerbi/export/trips.txt"
-calendar_path = directory_path + "/powerbi/export/calendar.txt"
+calendar_path = directory_path + "/powerbi/export/calendar_dates.txt"
 
 # Providing the folder path
 origin = directory_path + "/powerbi/import/"
@@ -17,7 +17,7 @@ target = directory_path + "/powerbi/export/"
 
 # Download new package
 print("Downloading Updated GTFS Package")
-r = requests.get("https://www.transitchicago.com/downloads/sch_data/google_transit.zip")
+r = requests.get("https://storage.googleapis.com/storage/v1/b/mdb-latest/o/us-district-of-columbia-washington-wmata-gtfs-1847.zip?alt=media")
 z = zipfile.ZipFile(io.BytesIO(r.content))
 z.extractall(origin)
 
@@ -25,30 +25,17 @@ z.extractall(origin)
 files = os.listdir(origin)
 
 # Fetching all the files to directory
-file_names = ["calendar.txt", "stop_times.txt", "trips.txt"]
+file_names = ["calendar_dates.txt", "stop_times.txt", "trips.txt"]
 for file_name in files:
    if file_name in file_names:
        shutil.copy(origin+file_name, target+file_name)
 print("Files are copied successfully")
 
-count = 1
-date_options = []
-with open(calendar_path, "r", encoding="utf-8") as file:
-    for line in file:
-        split_values = line.split(',')
-        date_options.append(f"{split_values[8]},{split_values[9][:-1]}")
-unique_date_options = list(set(date_options))
-for option in unique_date_options:
-    print(f"#{count} - {option}")
-    count += 1
-
-calendar_line_input = input("Enter the Desired Schedule Period from selection: ")
 schedule_date = input("Enter the Schedule Effective Date (mm-dd-yyyy): ")
-calendar_regex = re.compile(unique_date_options[int(calendar_line_input)-1] + "|service_id", re.MULTILINE)
 stop_times_regex = re.compile(
-    r',30072,|,30073,|,30070,|,30071,|,30381,|,30382,|,30215,|,30216,|,30040,|,30041,|,30164,|,30241,|,30064,|,30065,|,30297,|,30298,|trip_id', re.MULTILINE)
+    r',PF_F03_1,|,PF_F03_2,|,PF_D03_C,|,PF_B02_1,|,PF_B02_2,|trip_id', re.MULTILINE)
 trips_regex = re.compile(
-    r'Red|Blue|Brn|G|Org|P|Pink|Y|service_id', re.MULTILINE)
+    r'RED|BLUE|GREEN|ORANGE|YELLOW|SILVER|service_id', re.MULTILINE)
 
 calendar_ids = []
 weekday_trip_ids = []
@@ -151,8 +138,6 @@ def get_ids(path, column):
 def file_rename(path, date):
     os.rename(path,f"{path[:-4]}_{date}.txt")
 
-print("Performing Regex Cleanup on 'calendar.txt'")
-regex_runner(calendar_regex, calendar_path)
 service_ids = get_ids(calendar_path, 0)
 
 print("Performing Regex Cleanup on 'stop_times.txt'")
