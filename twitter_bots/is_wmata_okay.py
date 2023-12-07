@@ -79,10 +79,12 @@ def prepare_tweet_text_1(data, is_good_day_flag):
         text_insert = "had"
         tweet_date = get_date("tweet-date-yesterday")
         tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-yesterday-int")))
+        tweet_hour = ""
     else:
         text_insert = "is having"
         tweet_date = get_date("tweet-date-today")
         tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-today-int")))
+        tweet_hour = f" at {get_date('tweet-hour')}"
     system_actual = data["system"]["ActualRuns"]
     system_perc = int(float(data["system"]["PercentRun"]) * 100)
     on_time_trains = 0
@@ -106,7 +108,7 @@ def prepare_tweet_text_1(data, is_good_day_flag):
     else:
         type_of_day = f"🤬WMATA Rail {text_insert} a terrible day."
         expression = "."
-    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains operated on {tweet_date}{tweet_date_ending}{expression}\n{on_time_trains_perc}% arrived at their scheduled intervals.\nTo explore historical data: brandonmcfadden.com/wmata-reliability."
+    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains operated on {tweet_date}{tweet_date_ending}{tweet_hour}{expression}\n{on_time_trains_perc}% arrived at their scheduled intervals.\nTo explore historical data: brandonmcfadden.com/wmata-reliability."
     return text_output_part_1
 
 
