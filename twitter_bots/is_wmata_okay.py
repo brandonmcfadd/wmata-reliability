@@ -1,4 +1,4 @@
-"""grabs data from the api and sends it off to the isCTAokay twitter account"""
+"""grabs data from the api and sends it off to the isWMATAokay twitter account"""
 import os
 import json
 import datetime
@@ -10,11 +10,11 @@ from dotenv import load_dotenv  # Used to Load Env Var
 load_dotenv()
 
 # ENV Variables
-twitter_api_key = os.getenv('IS_CTA_OKAY_API_KEY')
-twitter_api_key_secret = os.getenv('IS_CTA_OKAY_API_KEY_SECRET')
-twitter_access_token = os.getenv('IS_CTA_OKAY_ACCESS_TOKEN')
-twitter_access_token_secret = os.getenv('IS_CTA_OKAY_ACCESS_TOKEN_SECRET')
-twitter_bearer_key = os.getenv('IS_CTA_OKAY_BEARER_TOKEN')
+twitter_api_key = os.getenv('IS_WMATA_OKAY_API_KEY')
+twitter_api_key_secret = os.getenv('IS_WMATA_OKAY_API_KEY_SECRET')
+twitter_access_token = os.getenv('IS_WMATA_OKAY_ACCESS_TOKEN')
+twitter_access_token_secret = os.getenv('IS_WMATA_OKAY_ACCESS_TOKEN_SECRET')
+twitter_bearer_key = os.getenv('IS_WMATA_OKAY_BEARER_TOKEN')
 my_api_key = os.getenv('MY_API_KEY')
 main_file_path = os.getenv('FILE_PATH')
 
@@ -29,14 +29,14 @@ def get_ordinal_suffix(day: int) -> str:
 
 def get_run_data_from_api():
     """hits the api and returns the current days data"""
-    todays_stats_api_url = "http://rta-api.brandonmcfadden.com/api/v2/cta/get_daily_results/today"
+    todays_stats_api_url = "http://api.brandonmcfadden.com/api/v2/wmata/get_daily_results/today"
     my_api_call_headers = {
         'Authorization': my_api_key
     }
 
     api_response = requests.request(
         "GET", todays_stats_api_url, headers=my_api_call_headers, timeout=30)
-
+    print(api_response.json())
     return api_response.json()
 
 
@@ -71,18 +71,18 @@ def prepare_tweet_text_1(data, is_good_day_flag):
     if on_time_trains > 0:
         on_time_trains_perc = int((on_time_trains/system_actual)*100)
     if is_good_day_flag == 1:
-        type_of_day = "😎CTA Rail is having a good day! To do this, the CTA cut 21% of scheduled service."
+        type_of_day = "😎WMATA Rail is having a good day!"
         expression = "!"
     elif is_good_day_flag == 2:
-        type_of_day = "🤷CTA Rail is having a so-so day even with a 21% cut of scheduled service."
+        type_of_day = "🤷WMATA Rail is having a so-so day."
         expression = "."
     elif is_good_day_flag == 3:
-        type_of_day = "😡CTA Rail is not having a good day even after cutting 21% of scheduled service."
+        type_of_day = "😡WMATA Rail is not having a good day."
         expression = "."
     else:
-        type_of_day = "🤬CTA Rail is having a terrible day even after cutting 21% of scheduled service."
+        type_of_day = "🤬WMATA Rail is having a terrible day."
         expression = "."
-    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains have operated on {last_updated_string_full}{last_updated_string_ending}{expression} {on_time_trains_perc}% arrived at their scheduled intervals.\nFor more on service cuts: ctaction.org/service-cuts.\nTo explore historical data: brandonmcfadden.com/cta-reliability."
+    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains have operated on {last_updated_string_full}{last_updated_string_ending}{expression} {on_time_trains_perc}% arrived at their scheduled intervals.\nTo explore historical data: brandonmcfadden.com/wmata-reliability."
     return text_output_part_1
 
 
@@ -154,13 +154,13 @@ print()
 print(tweet_text_3)
 print()
 
-api = tweepy.Client(twitter_bearer_key, twitter_api_key, twitter_api_key_secret,
-                    twitter_access_token, twitter_access_token_secret)
-status1 = api.create_tweet(text=tweet_text_1, )
-first_tweet = status1.data["id"]
-status2 = api.create_tweet(text=tweet_text_2, in_reply_to_tweet_id=first_tweet)
-second_tweet = status2.data["id"]
-status3 = api.create_tweet(text=tweet_text_3, in_reply_to_tweet_id=second_tweet)
-third_tweet = status3.data["id"]
-print(
-    f"sent new tweets https://twitter.com/isCTAokay/status/{first_tweet} and https://twitter.com/isCTAokay/status/{second_tweet} and https://twitter.com/isCTAokay/status/{third_tweet}")
+# api = tweepy.Client(twitter_bearer_key, twitter_api_key, twitter_api_key_secret,
+#                     twitter_access_token, twitter_access_token_secret)
+# status1 = api.create_tweet(text=tweet_text_1, )
+# first_tweet = status1.data["id"]
+# status2 = api.create_tweet(text=tweet_text_2, in_reply_to_tweet_id=first_tweet)
+# second_tweet = status2.data["id"]
+# status3 = api.create_tweet(text=tweet_text_3, in_reply_to_tweet_id=second_tweet)
+# third_tweet = status3.data["id"]
+# print(
+#     f"sent new tweets https://twitter.com/isWMATAokay/status/{first_tweet} and https://twitter.com/isWMATAokay/status/{second_tweet} and https://twitter.com/isWMATAokay/status/{third_tweet}")
