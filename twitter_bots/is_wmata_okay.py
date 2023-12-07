@@ -19,11 +19,6 @@ twitter_bearer_key = os.getenv('IS_WMATA_OKAY_BEARER_TOKEN')
 my_api_key = os.getenv('MY_API_KEY')
 main_file_path = os.getenv('FILE_PATH')
 
-# Settings
-file = open(file=main_file_path + 'settings.json',
-            mode='r',
-            encoding='utf-8')
-settings = json.load(file)
 
 def get_date(date_type):
     """formatted date shortcut"""
