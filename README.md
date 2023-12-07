@@ -1,7 +1,7 @@
 # Washington Metropolitan Area Transit Authority ("WMATA") Reliability Tracker
 
 ## Overview
-This project (and associated PowerBi Report) was created to help provide insight and transparency into the current service levels of the Washington Metropolitan Area Transit Authority ("WMATA") rail network. Utilizing the WMATA API, it can be determined when a train arrives at a specific circuit along the line. Using this data, the number of arrivals can be determined and compared to the number scheduled via the GTFS feed of published schedules.
+This project (and associated PowerBi Report) was created to help provide insight and transparency into the current service levels of the Washington Metropolitan Area Transit Authority ("WMATA") rail network. Utilizing the WMATA API, it can be determined when a train arrives at a specific circuit along the line. Using this data, the number of arrivals can be determined and compared to the number scheduled via the GTFS feed of published schedules. This project is a rebuild off of my previous project for [CTA Realibilty](https://github.com/brandonmcfadd/cta-reliability).
 
 ## Station Selection 
 The station selected along each line is one where all trains, regardless of destination, will arrive and is as close to the center of the line as feasible.
