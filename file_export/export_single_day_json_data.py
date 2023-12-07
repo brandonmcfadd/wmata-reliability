@@ -95,7 +95,7 @@ def get_last_refresh_time(dataset):
         print("error in:", response_json)
 
 
-def parse_response_cta(data, last_refresh, days_old):
+def parse_response_wmata(data, last_refresh, days_old):
     """takes the data from the API and prepares it to add to JSON output"""
     system_total, system_scheduled, system_scheduled_remaining = 0, 0, 0
     routes_information = {}
@@ -114,15 +114,17 @@ def parse_response_cta(data, last_refresh, days_old):
             arrival_percentage = item["date_range[Arrivals Percentage]"]
         single_route_information = [item["date_range[Actual Arrivals]"], item["date_range[Scheduled Arrivals]"], arrival_percentage,
                                     item["date_range[Remaining Scheduled]"], item["date_range[Consistent Headways]"], item["date_range[Longest Wait]"],
-                                    item["date_range[Actual Arrivals - Morning Peak]"], item["date_range[Actual Arrivals - Evening Peak]"],
-                                    item["date_range[Scheduled Arrivals - Morning Peak]"], item["date_range[Scheduled Arrivals - Evening Peak]"],
                                     item["date_range[On-Time Trains]"]]
         routes_information[item["date_range[Route]"]
                            ] = single_route_information
-    json_file = main_file_path_json + "cta/" + shortened_date + ".json"
+    json_file = main_file_path_json + shortened_date + ".json"
+    try:
+        system_percent = system_total/system_scheduled
+    except: # pylint: disable=bare-except
+        system_percent = 0
     file_data = {
         "Data Provided By": "Brandon McFadden - http://api.brandonmcfadden.com",
-        "Reports Acccessible At": "https://brandonmcfadden.com/cta-reliability",
+        "Reports Acccessible At": "https://brandonmcfadden.com/wmata-reliability",
         "API Information At": "http://api.brandonmcfadden.com",
         "Entity": "wmata",
         "Date": shortened_date,
@@ -133,40 +135,17 @@ def parse_response_cta(data, last_refresh, days_old):
             "ActualRuns": system_total,
             "ScheduledRuns": system_scheduled,
             "ScheduledRunsRemaining": system_scheduled_remaining,
-            "PercentRun": system_total/system_scheduled
+            "PercentRun": system_percent
         },
         "routes": {
             "Blue": {
                 "ActualRuns": routes_information["Blue"][0],
-                "ActualRunsOHareBranch": routes_information["Blue"][0],
-                "ActualRunsFPBranch": 0,
                 "ScheduledRuns": routes_information["Blue"][1],
-                "ScheduledRunsOHareBranch": routes_information["Blue"][1],
-                "ScheduledRunsFPBranch": 0,
                 "PercentRun": routes_information["Blue"][2],
-                "PercentRunOHareBranch": routes_information["Blue"][2],
-                "PercentRunFPBranch": 0,
                 "RemainingScheduled": routes_information["Blue"][3],
                 "Consistent_Headways": routes_information["Blue"][4],
                 "LongestWait": routes_information["Blue"][5],
-                "ActualRunsMorningPeak": routes_information["Blue"][6],
-                "ActualRunsEveningPeak": routes_information["Blue"][7],
-                "ScheduledRunsMorningPeak": routes_information["Blue"][8],
-                "ScheduledRunsEveningPeak": routes_information["Blue"][9],
-                "Trains_On_Time": routes_information["Blue"][10]
-            },
-            "Brown": {
-                "ActualRuns": routes_information["Brown"][0],
-                "ScheduledRuns": routes_information["Brown"][1],
-                "PercentRun": routes_information["Brown"][2],
-                "RemainingScheduled": routes_information["Brown"][3],
-                "Consistent_Headways": routes_information["Brown"][4],
-                "LongestWait": routes_information["Brown"][5],
-                "ActualRunsMorningPeak": routes_information["Brown"][6],
-                "ActualRunsEveningPeak": routes_information["Brown"][7],
-                "ScheduledRunsMorningPeak": routes_information["Brown"][8],
-                "ScheduledRunsEveningPeak": routes_information["Brown"][9],
-                "Trains_On_Time": routes_information["Brown"][10]
+                "Trains_On_Time": routes_information["Blue"][6]
             },
             "Green": {
                 "ActualRuns": routes_information["Green"][0],
@@ -175,11 +154,7 @@ def parse_response_cta(data, last_refresh, days_old):
                 "RemainingScheduled": routes_information["Green"][3],
                 "Consistent_Headways": routes_information["Green"][4],
                 "LongestWait": routes_information["Green"][5],
-                "ActualRunsMorningPeak": routes_information["Green"][6],
-                "ActualRunsEveningPeak": routes_information["Green"][7],
-                "ScheduledRunsMorningPeak": routes_information["Green"][8],
-                "ScheduledRunsEveningPeak": routes_information["Green"][9],
-                "Trains_On_Time": routes_information["Green"][10]
+                "Trains_On_Time": routes_information["Green"][6]
             },
             "Orange": {
                 "ActualRuns": routes_information["Orange"][0],
@@ -188,37 +163,7 @@ def parse_response_cta(data, last_refresh, days_old):
                 "RemainingScheduled": routes_information["Orange"][3],
                 "Consistent_Headways": routes_information["Orange"][4],
                 "LongestWait": routes_information["Orange"][5],
-                "ActualRunsMorningPeak": routes_information["Orange"][6],
-                "ActualRunsEveningPeak": routes_information["Orange"][7],
-                "ScheduledRunsMorningPeak": routes_information["Orange"][8],
-                "ScheduledRunsEveningPeak": routes_information["Orange"][9],
-                "Trains_On_Time": routes_information["Green"][10]
-            },
-            "Pink": {
-                "ActualRuns": routes_information["Pink"][0],
-                "ScheduledRuns": routes_information["Pink"][1],
-                "PercentRun": routes_information["Pink"][2],
-                "RemainingScheduled": routes_information["Pink"][3],
-                "Consistent_Headways": routes_information["Pink"][4],
-                "LongestWait": routes_information["Pink"][5],
-                "ActualRunsMorningPeak": routes_information["Pink"][6],
-                "ActualRunsEveningPeak": routes_information["Pink"][7],
-                "ScheduledRunsMorningPeak": routes_information["Pink"][8],
-                "ScheduledRunsEveningPeak": routes_information["Pink"][9],
-                "Trains_On_Time": routes_information["Pink"][10]
-            },
-            "Purple": {
-                "ActualRuns": routes_information["Purple"][0],
-                "ScheduledRuns": routes_information["Purple"][1],
-                "PercentRun": routes_information["Purple"][2],
-                "RemainingScheduled": routes_information["Purple"][3],
-                "Consistent_Headways": routes_information["Purple"][4],
-                "LongestWait": routes_information["Purple"][5],
-                "ActualRunsMorningPeak": routes_information["Purple"][6],
-                "ActualRunsEveningPeak": routes_information["Purple"][7],
-                "ScheduledRunsMorningPeak": routes_information["Purple"][8],
-                "ScheduledRunsEveningPeak": routes_information["Purple"][9],
-                "Trains_On_Time": routes_information["Purple"][10]
+                "Trains_On_Time": routes_information["Orange"][6]
             },
             "Red": {
                 "ActualRuns": routes_information["Red"][0],
@@ -227,11 +172,16 @@ def parse_response_cta(data, last_refresh, days_old):
                 "RemainingScheduled": routes_information["Red"][3],
                 "Consistent_Headways": routes_information["Red"][4],
                 "LongestWait": routes_information["Red"][5],
-                "ActualRunsMorningPeak": routes_information["Red"][6],
-                "ActualRunsEveningPeak": routes_information["Red"][7],
-                "ScheduledRunsMorningPeak": routes_information["Red"][8],
-                "ScheduledRunsEveningPeak": routes_information["Red"][9],
-                "Trains_On_Time": routes_information["Red"][10]
+                "Trains_On_Time": routes_information["Red"][6]
+            },
+            "Silver": {
+                "ActualRuns": routes_information["Silver"][0],
+                "ScheduledRuns": routes_information["Silver"][1],
+                "PercentRun": routes_information["Silver"][2],
+                "RemainingScheduled": routes_information["Silver"][3],
+                "Consistent_Headways": routes_information["Silver"][4],
+                "LongestWait": routes_information["Silver"][5],
+                "Trains_On_Time": routes_information["Silver"][6]
             },
             "Yellow": {
                 "ActualRuns": routes_information["Yellow"][0],
@@ -240,11 +190,7 @@ def parse_response_cta(data, last_refresh, days_old):
                 "RemainingScheduled": routes_information["Yellow"][3],
                 "Consistent_Headways": routes_information["Yellow"][4],
                 "LongestWait": routes_information["Yellow"][5],
-                "ActualRunsMorningPeak": routes_information["Yellow"][6],
-                "ActualRunsEveningPeak": routes_information["Yellow"][7],
-                "ScheduledRunsMorningPeak": routes_information["Yellow"][8],
-                "ScheduledRunsEveningPeak": routes_information["Yellow"][9],
-                "Trains_On_Time": routes_information["Yellow"][10]
+                "Trains_On_Time": routes_information["Yellow"][6]
             }
         }
     }
@@ -254,106 +200,22 @@ def parse_response_cta(data, last_refresh, days_old):
         json.dump(file_data, f, indent=2)
 
 
-def parse_response_metra(data, days_old):
-    """takes the data from the API and prepares it to add to JSON output"""
-    for item in data:
-        shortened_date = item["date_range[Dates]"][:10]
-        json_file = main_file_path_json + "metra/" + shortened_date + ".json"
-        file_data = {
-            "Data Provided By": "Brandon McFadden - http://rta-api.brandonmcfadden.com",
-            "Reports Acccessible At": "https://brandonmcfadden.com/cta-reliability",
-            "V2 API Information At": "http://rta-api.brandonmcfadden.com",
-            "Entity": "metra",
-            "Date": shortened_date,
-            "IntegrityChecksPerformed": item["date_range[Integrity - Actual]"],
-            "IntegrityPercentage": item["date_range[Integrity - Percentage]"],
-            "system": {
-                "ActualRuns": item["date_range[System - Actual]"],
-                "ScheduledRuns": item["date_range[System - Scheduled]"],
-                "PercentRun": item["date_range[System - Percentage]"]
-            },
-            "routes": {
-                "BNSF": {
-                    "ActualRuns": item["date_range[BNSF Line - Actual]"],
-                    "ScheduledRuns": item["date_range[BNSF Line - Scheduled]"],
-                    "PercentRun": item["date_range[BNSF Line - Percentage]"]
-                },
-                "HC": {
-                    "ActualRuns": item["date_range[HC Line - Actual]"],
-                    "ScheduledRuns": item["date_range[HC Line - Scheduled]"],
-                    "PercentRun": item["date_range[HC Line - Percentage]"]
-                },
-                "MN-N": {
-                    "ActualRuns": item["date_range[MD-N Line - Actual]"],
-                    "ScheduledRuns": item["date_range[MD-N Line - Scheduled]"],
-                    "PercentRun": item["date_range[MD-N Line - Percentage]"]
-                },
-                "MN-W": {
-                    "ActualRuns": item["date_range[MD-W Line - Actual]"],
-                    "ScheduledRuns": item["date_range[MD-W Line - Scheduled]"],
-                    "PercentRun": item["date_range[MD-W Line - Percentage]"]
-                },
-                "ME": {
-                    "ActualRuns": item["date_range[ME Line - Actual]"],
-                    "ScheduledRuns": item["date_range[ME Line - Scheduled]"],
-                    "PercentRun": item["date_range[ME Line - Percentage]"]
-                },
-                "NCS": {
-                    "ActualRuns": item["date_range[NCS Line - Actual]"],
-                    "ScheduledRuns": item["date_range[NCS Line - Scheduled]"],
-                    "PercentRun": item["date_range[NCS Line - Percentage]"]
-                },
-                "RI": {
-                    "ActualRuns": item["date_range[RI Line - Actual]"],
-                    "ScheduledRuns": item["date_range[RI Line - Scheduled]"],
-                    "PercentRun": item["date_range[RI Line - Percentage]"]
-                },
-                "UP-N": {
-                    "ActualRuns": item["date_range[UP-N Line - Actual]"],
-                    "ScheduledRuns": item["date_range[UP-N Line - Scheduled]"],
-                    "PercentRun": item["date_range[UP-N Line - Percentage]"]
-                },
-                "UP-NW": {
-                    "ActualRuns": item["date_range[UP-NW Line - Actual]"],
-                    "ScheduledRuns": item["date_range[UP-NW Line - Scheduled]"],
-                    "PercentRun": item["date_range[UP-NW Line - Percentage]"]
-                },
-                "UP-W": {
-                    "ActualRuns": item["date_range[UP-W Line - Actual]"],
-                    "ScheduledRuns": item["date_range[UP-W Line - Scheduled]"],
-                    "PercentRun": item["date_range[UP-W Line - Percentage]"]
-                }
-            }
-        }
-
-        with open(json_file, 'w', encoding="utf-8") as f:
-            print(f"Remaining: {days_old} | Saving Data In: {json_file}")
-            json.dump(file_data, f, indent=2)
-
-
 bearer_token = get_token()
 
 remaining = 2
 last_refresh_time = None
 
 while last_refresh_time is None:
-    last_refresh_time = get_last_refresh_time(cta_dataset_id)
+    last_refresh_time = get_last_refresh_time(wmata_dataset_id)
     if last_refresh_time is None:
         print("Last Refresh Time is not available, sleeping 60 seconds")
         sleep(60)
 
 while remaining >= 0:
     try:
-        parse_response_cta(get_report_data(
-            cta_dataset_id, remaining), last_refresh_time, remaining)
+        parse_response_wmata(get_report_data(
+            wmata_dataset_id, remaining), last_refresh_time, remaining)
     except:  # pylint: disable=bare-except
-        print("Failed to grab CTA #", remaining)
-
-    try:
-        parse_response_metra(get_report_data(
-            metra_dataset_id, remaining), remaining)
-    except:  # pylint: disable=bare-except
-        print("Failed to grab Metra #", remaining)
-
+        print("Failed to grab WMATA #", remaining)
     remaining -= 1
     sleep(1)

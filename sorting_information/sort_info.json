@@ -10,17 +10,6 @@
       "Afternoon": [2,null,null],
       "Evening": [3,null,null],
       "Night": [4,null,null],
-      "01-01-2020": [1,"Major","Normal"],
-      "10-23-2022": [2,"Major","Normal"],
-      "02-01-2023": [3,"Minor","Normal"],
-      "03-26-2023": [4,"Major","Normal"],
-      "07-23-2023": [5,"Minor","Irops-Blue"],
-      "10-08-2023": [6,"Major","Normal"],
-      "11-04-2023": [7,"Minor","Normal"],
-      "11-06-2023": [8,"Minor","Normal"],
-      "11-11-2023": [9,"Minor","Irops-Red"],
-      "11-13-2023": [10,"Major","Normal"],
-      "11-17-2023": [11,"Minor","Normal"],
-      "12-02-2023": [11,"Minor","Irops-Red"],
-      "12-04-2023": [11,"Minor","Normal"]
+      "12-06-2023": [1,"Major","Normal"],
+      "12-31-2050": [11,"Minor","Normal"]
     }
