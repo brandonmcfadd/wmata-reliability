@@ -1,7 +1,8 @@
 """grabs data from the api and sends it off to the isWMATAokay twitter account"""
 import os
 import json
-import datetime
+from datetime import datetime, timedelta
+from dateutil import tz
 import tweepy
 import requests  # Used for API Calls
 from dotenv import load_dotenv  # Used to Load Env Var
@@ -24,19 +25,39 @@ file = open(file=main_file_path + 'settings.json',
             encoding='utf-8')
 settings = json.load(file)
 
+def get_date(date_type):
+    """formatted date shortcut"""
+    if date_type == "short":
+        date = datetime.strftime(datetime.now(), "%Y%m%d")
+    elif date_type == "hour":
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), "%H")
+    elif date_type == "long":
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), "%Y-%m-%dT%k:%M:%SZ")
+    elif date_type == "tweet-date-today":
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), '%b %-e')
+    elif date_type == "tweet-date-yesterday":
+        date = datetime.strftime(datetime.now()-timedelta(days=1)+timedelta(hours=1), '%b %-e')
+    elif date_type == "tweet-date-today-int":
+        date = datetime.strftime(datetime.now()+timedelta(hours=1), '%e')
+    elif date_type == "tweet-date-yesterday-int":
+        date = datetime.strftime(datetime.now()-timedelta(days=1)+timedelta(hours=1), '%e')
+    elif date_type == "tweet-hour":
+        date = datetime.strftime(datetime.now()-timedelta(days=1)+timedelta(hours=1), '%-l%p').lower()
+    return date
+
 def get_ordinal_suffix(day: int) -> str:
     return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th') if day not in (11, 12, 13) else 'th'
 
-def get_run_data_from_api():
+def get_run_data_from_api(type):
     """hits the api and returns the current days data"""
-    todays_stats_api_url = "http://api.brandonmcfadden.com/api/v2/wmata/get_daily_results/today"
+    todays_stats_api_url = f"http://api.brandonmcfadden.com/api/v2/wmata/get_daily_results/{type}"
     my_api_call_headers = {
         'Authorization': my_api_key
     }
 
     api_response = requests.request(
         "GET", todays_stats_api_url, headers=my_api_call_headers, timeout=30)
-    print(api_response.json())
+
     return api_response.json()
 
 
@@ -44,7 +65,9 @@ def day_of_performance_stats(data):
     """determines the type of day we having"""
     system_actual = int(data["system"]["ActualRuns"])
     system_scheduled = int(data["system"]["ScheduledRuns"])
-    if system_actual/system_scheduled >= 0.95:
+    if system_actual/system_scheduled >= 0.98:
+        type_of_day = 0
+    elif system_actual/system_scheduled >= 0.95 and system_actual/system_scheduled < 0.98:
         type_of_day = 1
     elif system_actual/system_scheduled >= 0.90 and system_actual/system_scheduled < 0.95:
         type_of_day = 2
@@ -57,53 +80,63 @@ def day_of_performance_stats(data):
 
 def prepare_tweet_text_1(data, is_good_day_flag):
     """preps the tweet text for the first tweet"""
+    if get_date("hour") in ("0", "00"):
+        text_insert = "had"
+        tweet_date = get_date("tweet-date-yesterday")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-yesterday-int")))
+    else:
+        text_insert = "is having"
+        tweet_date = get_date("tweet-date-today")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-today-int")))
     system_actual = data["system"]["ActualRuns"]
     system_perc = int(float(data["system"]["PercentRun"]) * 100)
     on_time_trains = 0
-    last_updated = data["LastUpdated"]
-    system_perc = int(float(data["system"]["PercentRun"]) * 100)
-    last_updated_datetime = datetime.datetime.strptime(last_updated, '%Y-%m-%dT%H:%M:%S%z')
-    last_updated_string_full = datetime.datetime.strftime(last_updated_datetime, '%b %-e')
-    last_updated_string_int = datetime.datetime.strftime(last_updated_datetime, '%e')
-    last_updated_string_ending = get_ordinal_suffix(int(last_updated_string_int))
+
     for line in data["routes"]:
         on_time_trains += int(data["routes"][line]["Trains_On_Time"])
     if on_time_trains > 0:
         on_time_trains_perc = int((on_time_trains/system_actual)*100)
-    if is_good_day_flag == 1:
-        type_of_day = "😎WMATA Rail is having a good day!"
+    if is_good_day_flag == 0:
+        type_of_day = f"🤩WMATA Rail {text_insert} a great day!"
+        expression = "!"
+    elif is_good_day_flag == 1:
+        type_of_day = f"😎WMATA Rail {text_insert} a good day!"
         expression = "!"
     elif is_good_day_flag == 2:
-        type_of_day = "🤷WMATA Rail is having a so-so day."
+        type_of_day = f"🤷WMATA Rail {text_insert} a so-so day."
         expression = "."
     elif is_good_day_flag == 3:
-        type_of_day = "😡WMATA Rail is not having a good day."
+        type_of_day = f"😡WMATA Rail {text_insert} a tough day."
         expression = "."
     else:
-        type_of_day = "🤬WMATA Rail is having a terrible day."
+        type_of_day = f"🤬WMATA Rail {text_insert} a terrible day."
         expression = "."
-    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains have operated on {last_updated_string_full}{last_updated_string_ending}{expression} {on_time_trains_perc}% arrived at their scheduled intervals.\nTo explore historical data: brandonmcfadden.com/wmata-reliability."
+    text_output_part_1 = f"{type_of_day}\n{system_perc}% of scheduled trains operated on {tweet_date}{tweet_date_ending}{expression}\n{on_time_trains_perc}% arrived at their scheduled intervals.\nTo explore historical data: brandonmcfadden.com/wmata-reliability."
     return text_output_part_1
 
 
 def prepare_tweet_text_2(data):
     "prepares the reply tweet for tweet 1"
+    if get_date("hour") in ("0", "00"):
+        text_insert = "for"
+        tweet_date = get_date("tweet-date-yesterday")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-yesterday-int")))
+        tweet_hour = ""
+    else:
+        text_insert = "as of"
+        tweet_date = get_date("tweet-date-today")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-today-int")))
+        tweet_hour = f" at {get_date('tweet-hour')}"
     system_actual = data["system"]["ActualRuns"]
     system_sched = data["system"]["ScheduledRuns"]
     scheduled_runs_remaining = data["system"]["ScheduledRunsRemaining"]
-    last_updated = data["LastUpdated"]
     system_perc = int(float(data["system"]["PercentRun"]) * 100)
-    last_updated_datetime = datetime.datetime.strptime(last_updated, '%Y-%m-%dT%H:%M:%S%z')
-    last_updated_string_full = datetime.datetime.strftime(last_updated_datetime, '%b %-e')
-    last_updated_string_int = datetime.datetime.strftime(last_updated_datetime, '%e')
-    last_updated_string_ending = get_ordinal_suffix(int(last_updated_string_int))
-    last_updated_datetime = datetime.datetime.strptime(last_updated, '%Y-%m-%dT%H:%M:%S%z')
-    last_updated_string = datetime.datetime.strftime(last_updated_datetime, '%-l%p').lower()
+
     try:
         scheduled_runs_remaining_text = f"{scheduled_runs_remaining:,}"
-    except:
+    except: # pylint: disable=bare-except
         scheduled_runs_remaining_text = "🤷"
-    text_output_part_2 = f"System Stats as of {last_updated_string_full}{last_updated_string_ending} at {last_updated_string} (actual/scheduled):\nSystem: {system_perc}% • {system_actual:,}/{system_sched:,}"
+    text_output_part_2 = f"System Stats {text_insert} {tweet_date}{tweet_date_ending}{tweet_hour} (actual/scheduled):\nSystem: {system_perc}% • {system_actual:,}/{system_sched:,}"
     for line in data["routes"]:
         actual_runs = data["routes"][line]["ActualRuns"]
         scheduled_runs = data["routes"][line]["ScheduledRuns"]
@@ -117,15 +150,18 @@ def prepare_tweet_text_2(data):
 
 def prepare_tweet_text_3(data):
     "prepares the reply tweet for tweet 1"
+    if get_date("hour") in ("0", "00"):
+        text_insert = "for"
+        tweet_date = get_date("tweet-date-yesterday")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-yesterday-int")))
+        tweet_hour = ""
+    else:
+        text_insert = "as of"
+        tweet_date = get_date("tweet-date-today")
+        tweet_date_ending = get_ordinal_suffix(int(get_date("tweet-date-today-int")))
+        tweet_hour = f" at {get_date('tweet-hour')}"
     system_actual = data["system"]["ActualRuns"]
-    last_updated = data["LastUpdated"]
     system_perc = int(float(data["system"]["PercentRun"]) * 100)
-    last_updated_datetime = datetime.datetime.strptime(last_updated, '%Y-%m-%dT%H:%M:%S%z')
-    last_updated_string_full = datetime.datetime.strftime(last_updated_datetime, '%b %-e')
-    last_updated_string_int = datetime.datetime.strftime(last_updated_datetime, '%e')
-    last_updated_string_ending = get_ordinal_suffix(int(last_updated_string_int))
-    last_updated_datetime = datetime.datetime.strptime(last_updated, '%Y-%m-%dT%H:%M:%S%z')
-    last_updated_string = datetime.datetime.strftime(last_updated_datetime, '%-l%p').lower()
     on_time_arrivals = 0
     text_output_part_3 = ""
     for line in data["routes"]:
@@ -137,11 +173,14 @@ def prepare_tweet_text_3(data):
             percent_on_time = 0
         text_output_part_3 = f"{text_output_part_3}\n{line}: {percent_on_time}% • {on_time_runs:,}/{data['routes'][line]['ActualRuns']:,}"
     system_perc = int(float(on_time_arrivals/system_actual) * 100)
-    text_output_part_3 = f"On-Time Performance as of {last_updated_string_full}{last_updated_string_ending} at {last_updated_string} (# on-time/actual):\nSystem: {system_perc}% • {on_time_arrivals:,}/{system_actual:,}{text_output_part_3}"
+    text_output_part_3 = f"On-Time Performance {text_insert} {tweet_date}{tweet_date_ending}{tweet_hour} (# on-time/actual):\nSystem: {system_perc}% • {on_time_arrivals:,}/{system_actual:,}{text_output_part_3}"
     return text_output_part_3
 
+if get_date("hour") in ("0", "00"):
+    current_data = get_run_data_from_api("yesterday")
+else:
+    current_data = get_run_data_from_api("today")
 
-current_data = get_run_data_from_api()
 is_good_day = day_of_performance_stats(current_data)
 tweet_text_1 = prepare_tweet_text_1(current_data, is_good_day)
 tweet_text_2 = prepare_tweet_text_2(current_data)
@@ -154,13 +193,13 @@ print()
 print(tweet_text_3)
 print()
 
-# api = tweepy.Client(twitter_bearer_key, twitter_api_key, twitter_api_key_secret,
-#                     twitter_access_token, twitter_access_token_secret)
-# status1 = api.create_tweet(text=tweet_text_1, )
-# first_tweet = status1.data["id"]
-# status2 = api.create_tweet(text=tweet_text_2, in_reply_to_tweet_id=first_tweet)
-# second_tweet = status2.data["id"]
-# status3 = api.create_tweet(text=tweet_text_3, in_reply_to_tweet_id=second_tweet)
-# third_tweet = status3.data["id"]
-# print(
-#     f"sent new tweets https://twitter.com/isWMATAokay/status/{first_tweet} and https://twitter.com/isWMATAokay/status/{second_tweet} and https://twitter.com/isWMATAokay/status/{third_tweet}")
+api = tweepy.Client(twitter_bearer_key, twitter_api_key, twitter_api_key_secret,
+                    twitter_access_token, twitter_access_token_secret)
+status1 = api.create_tweet(text=tweet_text_1, )
+first_tweet = status1.data["id"]
+status2 = api.create_tweet(text=tweet_text_2, in_reply_to_tweet_id=first_tweet)
+second_tweet = status2.data["id"]
+status3 = api.create_tweet(text=tweet_text_3, in_reply_to_tweet_id=second_tweet)
+third_tweet = status3.data["id"]
+print(
+    f"sent new tweets https://twitter.com/isWMATAokay/status/{first_tweet} and https://twitter.com/isWMATAokay/status/{second_tweet} and https://twitter.com/isWMATAokay/status/{third_tweet}")
