@@ -87,7 +87,7 @@ def train_api_call_to_wmata_api():
 def add_train_to_file_api(trains):
     """Parses API Result from Train Tracker API and adds ETA's to a list"""
     for train in trains["TrainPositions"]:
-        if train["CircuitId"] in train_station_circuit_ids:
+        if train["CircuitId"] in train_station_circuit_ids and train["ServiceType"] == "Normal" and int(train["SecondsAtLocation"] < 60):
             current_month = get_date("current-month")
             now = get_date("now")
             file_path = main_file_path + "train_arrivals/train_arrivals-" + \
