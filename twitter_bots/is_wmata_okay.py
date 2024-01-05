@@ -1,8 +1,6 @@
 """grabs data from the api and sends it off to the isWMATAokay twitter account"""
 import os
-import json
 from datetime import datetime, timedelta
-from dateutil import tz
 import tweepy
 import requests  # Used for API Calls
 from dotenv import load_dotenv  # Used to Load Env Var
