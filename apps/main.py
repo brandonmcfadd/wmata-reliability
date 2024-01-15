@@ -8,8 +8,6 @@ import time  # Used to Get Current Time
 from datetime import datetime, timedelta
 from csv import DictWriter
 from dotenv import load_dotenv  # Used to Load Env Var
-from google.cloud import bigquery
-from google.oauth2 import service_account
 import requests  # Used for API Calls
 import urllib3
 urllib3.util.ssl_.DEFAULT_CIPHERS += ':HIGH:!DH:!aNULL'
@@ -27,7 +25,6 @@ train_api_key = os.getenv('WMATA_PRIMARY_KEY')
 main_file_path = os.getenv('WMATA_FILE_PATH')
 train_arrivals_table = os.getenv('WMATA_TRAIN_ARRIVALS_TABLE')
 integrity_check_table = os.getenv('WMATA_INTEGRITY_CHECK_TABLE')
-google_credentials_file = main_file_path + "credentials/cta-utilities-410023-73a50f35625b.json"
 
 # Logging Information
 LOG_FILENAME = main_file_path + 'logs/wmata-reliability.log'
@@ -102,9 +99,6 @@ def add_train_to_file_api(trains):
                 writer_object.writerow({'Full_Date_Time': now, 'Train_ID': train["TrainId"], 'Train_Number': train["TrainNumber"], 'Car_Count': train["CarCount"],
                                         'Direction_Num': train["DirectionNum"], 'Circuit_ID': train["CircuitId"], 'Destination_Station_Code': train["DestinationStationCode"], 'Line_Code': train["LineCode"],
                                         'Seconds_At_Location': train["SecondsAtLocation"], 'Service_Type': train["ServiceType"]})
-            rows_to_insert.append({'Full_Date_Time': now, 'Train_ID': train["TrainId"], 'Train_Number': train["TrainNumber"], 'Car_Count': train["CarCount"],
-                                        'Direction_Num': train["DirectionNum"], 'Circuit_ID': train["CircuitId"], 'Destination_Station_Code': train["DestinationStationCode"], 'Line_Code': train["LineCode"],
-                                        'Seconds_At_Location': train["SecondsAtLocation"], 'Service_Type': train["ServiceType"]})
 
 
 def check_main_train_file_exists():
@@ -154,25 +148,6 @@ def add_integrity_file_line(status):
             csvfile, fieldnames=integrity_file_csv_headers)
         writer_object.writerow({'Full_Date_Time': current_long_time,
                                'Simple_Date_Time': current_simple_time, 'Status': status})
-    row_to_insert = [{'Full_Date_Time': current_long_time,
-                      'Simple_Date_Time': current_simple_time, 'Status': status}]
-    add_rows_to_bigquery(row_to_insert, integrity_check_table)
-
-def add_rows_to_bigquery(row, table_id):
-    """Takes a Row as Input and inserts it to the specified Google Big Query Table"""
-    credentials = service_account.Credentials.from_service_account_file(
-        google_credentials_file, scopes=["https://www.googleapis.com/auth/cloud-platform"],
-    )
-
-    client = bigquery.Client(credentials=credentials, project=credentials.project_id,)
-
-    errors = client.insert_rows_json(table_id, row)  # Make an API request.
-    if errors:
-        logging.error("Encountered errors while inserting rows: %s", errors)
-    else:
-        logging.info(
-            "Successfully Inserted Row Into Table %s: %s", table_id, row)
-
 
 
 logging.info("Welcome to TrainTracker, WMATA Edition!")
@@ -209,10 +184,6 @@ while True:  # Where the magic happens
             response1 = train_api_call_to_wmata_api()
         except:  # pylint: disable=bare-except
             logging.critical("Failure to Check For Trains :(")
-
-    if rows_to_insert:
-            add_rows_to_bigquery(rows_to_insert, train_arrivals_table)
-
 
     add_integrity_file_line("Success")
 
